@@ -1,21 +1,27 @@
 mtype = {request, response, nil}
-chan buffer1 = [2] of {mtype}
-chan buffer2 = [2] of {mtype}
 
 proctype EndPoint(mtype msg; chan buffer){
-    do
-    :: buffer?request;
-    :: msg = request -> atomic{ buffer!response; msg = nil }
-    :: msg = response -> atomic{ msg = nil }
+    do /* non-determinstically, an EndPoint can do one of the following : */
+    /* read a `msg` from the buffer */
+    :: buffer?msg; 
+    /* if it received a request, send a response */
+    :: atomic{ msg == request -> buffer!response; msg = nil }
+    /* if it received a response, cosnume it */
+    :: atomic{ msg == response ->  msg = nil }
+    /* (non-deterministically) send a new request */
+    :: atomic{ msg == nil -> msg = request}
     od
 }
 
 
 proctype Router(mtype msg; chan buffer_from, buffer_to){
-    do
-    :: buffer_from?msg; buffer_to!msg
+    do /* a router just keeps forwarding messages */
+    :: atomic{ buffer_from?msg -> buffer_to!msg}
     od
 }
+
+chan buffer1 = [2] of {mtype}
+chan buffer2 = [2] of {mtype}
 
 init{
     atomic{
