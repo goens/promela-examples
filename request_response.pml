@@ -1,22 +1,25 @@
 mtype = {request, response, nil}
 
-proctype EndPoint(mtype msg; chan buffer_from, buffer_to){
+proctype EndPoint(chan buffer_from, buffer_to){
+    mtype msg = nil;
     do /* non-determinstically, an EndPoint can do one of the following : */
     /* read a `msg` from the buffer */
-    :: atomic{ buffer_from?msg; assert(msg != nil)}
+    :: atomic{ (msg == nil) && buffer_from?[msg] -> buffer_from?msg}
     /* if it received a request, send a response */
-    :: atomic{ msg == request -> buffer_to!response; msg = nil }
+    /* this atomicity might make a difference for deadlock */
+    :: atomic{ (msg == request) -> buffer_to!response; msg = nil } 
     /* if it received a response, consume it */
-    :: atomic{ msg == response ->  msg = nil }
+    :: atomic{ (msg == response) ->  msg = nil }
     /* (non-deterministically) decide to send a new request */
-    :: atomic{ msg == nil -> msg = request}
+    :: atomic{ buffer_to!request}
     od
 }
 
 
-proctype Router(mtype msg; chan buffer_from, buffer_to){
+proctype Router(chan buffer_from, buffer_to){
+    mtype msg = nil;
     do /* a router just keeps forwarding messages */
-    :: atomic{ buffer_from?msg; assert(msg != nil)} -> buffer_to!msg
+    :: buffer_from?msg  -> buffer_to!msg
     od
 }
 
@@ -34,10 +37,10 @@ chan buffer4 = [2] of {mtype}
 
 init{
     atomic{
-        run EndPoint(nil, buffer4, buffer1);
-        run Router(nil, buffer1, buffer2);
-        run EndPoint(nil, buffer2, buffer3);
-        run Router(nil, buffer3, buffer4);
+        run EndPoint(buffer4, buffer1);
+        run Router(buffer1, buffer2);
+        run EndPoint(buffer2, buffer3);
+        run Router(buffer3, buffer4);
         }
 }
 
