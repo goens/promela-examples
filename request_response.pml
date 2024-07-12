@@ -11,7 +11,10 @@ proctype EndPoint(chan buffer_from, buffer_to){
     /* if it received a response, consume it */
     :: atomic{ (msg == response) ->  msg = nil }
     /* (non-deterministically) decide to send a new request */
-    :: atomic{ buffer_to!request}
+    /* no flow control */
+    /* :: buffer_to!request */
+    /* flow control */
+    :: atomic{ (len(buffer_to) < 2 && !buffer_to?[request]) -> buffer_to!request}
     od
 }
 
