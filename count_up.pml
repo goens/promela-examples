@@ -1,7 +1,9 @@
 #define N 100
 
 proctype counter(int i){
-    (i < N) -> i = i + 1
+    do
+    :: (i < N) -> i = i + 1
+    od
 }
 
 init{
