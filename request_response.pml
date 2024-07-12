@@ -22,7 +22,16 @@ proctype EndPoint(chan buffer_from, buffer_to){
 proctype Router(chan buffer_from, buffer_to){
     mtype msg = nil;
     do /* a router just keeps forwarding messages */
-    :: buffer_from?msg  -> buffer_to!msg
+    /* no flow control: */
+    /* :: buffer_from?msg  -> buffer_to!msg */
+    /* with flow control */
+     :: buffer_from?msg  -> 
+     if
+     /* forward responses without any issue */
+     :: atomic{ (msg == response) -> buffer_to!msg }
+     /* flow control for requests */
+     :: atomic{ (msg == request && len(buffer_to) < 2 && !buffer_to?[request]) -> buffer_to!msg}
+     fi
     od
 }
 
