@@ -47,5 +47,8 @@ init{
         }
 }
 
-/* I would like to have a statement that a message in a channel will never
- be nil, not sure how to express this, so ussing asserts instead */
+never{
+    do
+    :: buffer1?[nil] || buffer2?[nil] ||buffer3?[nil] ||buffer4?[nil]
+    od
+}
