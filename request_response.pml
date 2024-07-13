@@ -14,7 +14,9 @@ proctype EndPoint(chan buffer_from, buffer_to){
     /* no flow control */
     /* :: buffer_to!request */
     /* flow control */
-    :: atomic{ (len(buffer_to) < 2 && !buffer_to?[request]) -> buffer_to!request}
+    :: atomic{ (len(buffer_to) < 2 && !buffer_to?[request] && msg == nil) -> buffer_to!request}
+    /* non-atomic respond to requests */
+    /* :: atomic{ (len(buffer_to) < 2 && !buffer_to?[request]) -> buffer_to!request} */
     od
 }
 
